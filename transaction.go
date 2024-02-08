@@ -5,6 +5,7 @@
 package tcap
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 )
@@ -148,10 +149,46 @@ func (t *Transaction) MarshalBinary() ([]byte, error) {
 
 // MarshalTo puts the byte sequence in the byte array given as b.
 func (t *Transaction) MarshalTo(b []byte) error {
+	var offset int = 2
 	b[0] = uint8(t.Type)
-	b[1] = t.Length
+	if t.Length > 127 {
+		buf := make([]byte, 4)
+		t.Length = t.Length -1
+		var count int
+		if (int64(t.Length) & int64(-16777216)) > 0 {
+			buf[0] = byte(t.Length >> 24 & 255)
+			buf[1] = byte(t.Length >> 16 & 255)
+			buf[2] = byte(t.Length >> 8 & 255)
+			buf[3] = byte(t.Length & 255)
+			count = 4
+		} else if (int64(t.Length) & 16711680) > 0 {
+			buf[0] = byte(t.Length >> 16 & 255)
+			buf[1] = byte(t.Length >> 8 & 255)
+			buf[2] = byte(t.Length & 255)
+			count = 3
 
-	var offset = 2
+		} else if (int64(t.Length) & 65280) > 0 {
+			buf[0] = byte(t.Length >> 8 & 255)
+			buf[1] = byte(t.Length & 255)
+			count = 2
+		} else {
+			buf[0] = byte(t.Length & 255)
+			count = 1
+		}
+
+		b[offset-1] = byte(128 | count)
+		for i := 0; i < count; i++ {
+			b[offset+i] = buf[i]
+		}
+		offset = offset + count
+
+	} else {
+		b[1] = t.Length
+		offset = 2
+	}
+
+	// b[1] = t.Length
+	// offset = 2
 	switch t.Type.Code() {
 	case Unidirectional:
 		break
@@ -211,13 +248,37 @@ func ParseTransaction(b []byte) (*Transaction, error) {
 	return t, nil
 }
 
+func readLength(b []byte) int{
+	var length int
+	r := bytes.NewReader(b[1:])
+	lengthByte, _ := r.ReadByte()
+	if((lengthByte & 128) == 0){
+		return int(lengthByte)
+	} else {
+		lengthByte = (lengthByte & 127)
+		if(lengthByte == 0){
+			return -1
+		} else {
+			for i := 0; i < int(lengthByte); i++ {
+				tmp, _ := r.ReadByte()
+				length = int(byte(length) << 8 | 255 & tmp)
+			}
+			return length
+		}
+	}
+}
+
 // UnmarshalBinary sets the values retrieved from byte sequence in an Transaction.
 func (t *Transaction) UnmarshalBinary(b []byte) error {
 	t.Type = Tag(b[0])
-	t.Length = b[1]
+	t.Length = uint8(readLength(b))
 
 	var err error
 	var offset = 2
+	if(t.Length > 127){
+		offset = 3
+	}
+
 	switch t.Type.Code() {
 	case Unidirectional:
 		break
@@ -250,11 +311,14 @@ func (t *Transaction) UnmarshalBinary(b []byte) error {
 			return err
 		}
 		offset += t.DestTransactionID.MarshalLen()
-		t.PAbortCause, err = ParseIE(b[offset : offset+3])
-		if err != nil {
-			return err
-		}
-		offset += t.PAbortCause.MarshalLen()
+
+
+		//t.PAbortCause, err = ParseIE(b[offset : ])
+		//if err != nil {
+		//	return err
+		//}
+		//t.PAbortCause.IE, _ = ParseAsBER(t.PAbortCause.Value)
+		//offset += t.PAbortCause.MarshalLen()
 	}
 	t.Payload = b[offset:]
 	return nil
@@ -279,7 +343,7 @@ func (t *Transaction) SetValsFrom(berParsed *IE) error {
 
 // MarshalLen returns the serial length of Transaction.
 func (t *Transaction) MarshalLen() int {
-	l := 2
+	l := 0
 	switch t.Type.Code() {
 	case Unidirectional:
 		break
@@ -306,7 +370,12 @@ func (t *Transaction) MarshalLen() int {
 			l += field.MarshalLen()
 		}
 	}
-	return l + len(t.Payload)
+	l += len(t.Payload)
+	if t.Length > 127 {
+		return l + 3
+	} else {
+		return l + 2
+	}
 }
 
 // SetLength sets the length in Length field.

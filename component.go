@@ -343,6 +343,7 @@ func ParseComponents(b []byte) (*Components, error) {
 	return c, nil
 }
 
+
 // UnmarshalBinary sets the values retrieved from byte sequence in an Components.
 func (c *Components) UnmarshalBinary(b []byte) error {
 	if len(b) < 2 {
@@ -350,9 +351,13 @@ func (c *Components) UnmarshalBinary(b []byte) error {
 	}
 
 	c.Tag = Tag(b[0])
-	c.Length = b[1]
+	c.Length = uint8(readLength(b))
 
 	var offset = 2
+
+	if(c.Length > 127){
+		offset = 3
+	}
 	for {
 		if len(b) < 2 {
 			break
@@ -364,10 +369,17 @@ func (c *Components) UnmarshalBinary(b []byte) error {
 		}
 		c.Component = append(c.Component, comp)
 
-		if len(b[offset:]) == int(comp.Length)+2 {
-			break
+		if(c.Length > 127) {
+			if len(b[offset:]) == int(comp.Length)+3 {
+				break
+			}
+			b = b[offset+comp.MarshalLen()-3:]
+		} else {
+			if len(b[offset:]) == int(comp.Length)+2 {
+				break
+			}
+			b = b[offset+comp.MarshalLen()-2:]
 		}
-		b = b[offset+comp.MarshalLen()-2:]
 	}
 	return nil
 }
@@ -387,10 +399,13 @@ func (c *Component) UnmarshalBinary(b []byte) error {
 		return io.ErrUnexpectedEOF
 	}
 	c.Type = Tag(b[0])
-	c.Length = b[1]
+	c.Length = uint8(readLength(b))
 
 	var err error
 	var offset = 2
+	if(c.Length > 127){
+		offset = 3
+	}
 	c.InvokeID, err = ParseIE(b[offset:])
 	if err != nil {
 		return err
@@ -566,7 +581,7 @@ func (c *Components) MarshalLen() int {
 
 // MarshalLen returns the serial length of Component.
 func (c *Component) MarshalLen() int {
-	var l = 2 + c.InvokeID.MarshalLen()
+	var l = c.InvokeID.MarshalLen()
 	switch c.Type.Code() {
 	case Invoke:
 		if field := c.LinkedID; field != nil {
@@ -600,7 +615,11 @@ func (c *Component) MarshalLen() int {
 			l += field.MarshalLen()
 		}
 	}
-	return l
+	if c.Length > 127 {
+		return l + 3
+	} else {
+		return l + 2
+	}
 }
 
 // SetLength sets the length in Length field.

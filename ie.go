@@ -226,11 +226,16 @@ func (i *IE) ParseRecursive(b []byte) error {
 	}
 
 	i.Tag = Tag(b[0])
-	i.Length = b[1]
-	if int(i.Length)+2 > len(b) {
+	i.Length = uint8(readLength(b))
+	var offset int = 2
+	if(i.Length > 127){
+		offset = 3
+	}
+
+	if int(i.Length)+offset > len(b) {
 		return nil
 	}
-	i.Value = b[2 : 2+int(i.Length)]
+	i.Value = b[offset : offset+int(i.Length)]
 
 	if i.Tag.Form() == 1 {
 		x, err := ParseAsBER(i.Value)
@@ -245,6 +250,9 @@ func (i *IE) ParseRecursive(b []byte) error {
 
 // MarshalLen returns the serial length of IE.
 func (i *IE) MarshalLen() int {
+	if(i.Length > 127) {
+		return 3 + len(i.Value)
+	}
 	return 2 + len(i.Value)
 }
 
