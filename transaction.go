@@ -150,44 +150,50 @@ func (t *Transaction) MarshalBinary() ([]byte, error) {
 func (t *Transaction) MarshalTo(b []byte) error {
 	var offset int = 2
 	b[0] = uint8(t.Type)
-	if t.Length > 127 {
-		buf := make([]byte, 4)
-		t.Length = t.Length - 1
-		var count int
-		if (int64(t.Length) & int64(-16777216)) > 0 {
-			buf[0] = byte(t.Length >> 24 & 255)
-			buf[1] = byte(t.Length >> 16 & 255)
-			buf[2] = byte(t.Length >> 8 & 255)
-			buf[3] = byte(t.Length & 255)
-			count = 4
-		} else if (int64(t.Length) & 16711680) > 0 {
-			buf[0] = byte(t.Length >> 16 & 255)
-			buf[1] = byte(t.Length >> 8 & 255)
-			buf[2] = byte(t.Length & 255)
-			count = 3
-
-		} else if (int64(t.Length) & 65280) > 0 {
-			buf[0] = byte(t.Length >> 8 & 255)
-			buf[1] = byte(t.Length & 255)
-			count = 2
-		} else {
-			buf[0] = byte(t.Length & 255)
-			count = 1
-		}
-
-		b[offset-1] = byte(128 | count)
-		for i := 0; i < count; i++ {
-			b[offset+i] = buf[i]
-		}
-		offset = offset + count
-
-	} else {
-		b[1] = t.Length
-		offset = 2
-	}
+	// if t.Length > 127 {
+	// 	buf := make([]byte, 4)
+	// 	t.Length = t.Length - 1
+	// 	var count int
+	// 	if (int64(t.Length) & int64(-16777216)) > 0 {
+	// 		buf[0] = byte(t.Length >> 24 & 255)
+	// 		buf[1] = byte(t.Length >> 16 & 255)
+	// 		buf[2] = byte(t.Length >> 8 & 255)
+	// 		buf[3] = byte(t.Length & 255)
+	// 		count = 4
+	// 	} else if (int64(t.Length) & 16711680) > 0 {
+	// 		buf[0] = byte(t.Length >> 16 & 255)
+	// 		buf[1] = byte(t.Length >> 8 & 255)
+	// 		buf[2] = byte(t.Length & 255)
+	// 		count = 3
+	//
+	// 	} else if (int64(t.Length) & 65280) > 0 {
+	// 		buf[0] = byte(t.Length >> 8 & 255)
+	// 		buf[1] = byte(t.Length & 255)
+	// 		count = 2
+	// 	} else {
+	// 		buf[0] = byte(t.Length & 255)
+	// 		count = 1
+	// 	}
+	//
+	// 	b[offset-1] = byte(128 | count)
+	// 	for i := 0; i < count; i++ {
+	// 		b[offset+i] = buf[i]
+	// 	}
+	// 	offset = offset + count
+	//
+	// } else {
+	// 	b[1] = t.Length
+	// 	offset = 2
+	// }
 
 	// b[1] = t.Length
 	// offset = 2
+	//
+	//
+	//
+	//
+	offset = writeLength(b, t.Length)
+
 	switch t.Type.Code() {
 	case Unidirectional:
 		break
