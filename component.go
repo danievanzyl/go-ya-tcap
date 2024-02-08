@@ -207,7 +207,7 @@ func NewReject(invID, problemType int, problemCode uint8, param []byte) *Compone
 
 // NewOperationCode returns a Operation Code.
 func NewOperationCode(code int, isLocal bool) *IE {
-	var tag = 6
+	tag := 6
 	if isLocal {
 		tag = 2
 	}
@@ -262,7 +262,7 @@ func (c *Component) MarshalTo(b []byte) error {
 	b[0] = uint8(c.Type)
 	b[1] = c.Length
 
-	var offset = 2
+	offset := 2
 	if field := c.InvokeID; field != nil {
 		if err := field.MarshalTo(b[offset : offset+field.MarshalLen()]); err != nil {
 			return err
@@ -343,7 +343,6 @@ func ParseComponents(b []byte) (*Components, error) {
 	return c, nil
 }
 
-
 // UnmarshalBinary sets the values retrieved from byte sequence in an Components.
 func (c *Components) UnmarshalBinary(b []byte) error {
 	if len(b) < 2 {
@@ -351,11 +350,12 @@ func (c *Components) UnmarshalBinary(b []byte) error {
 	}
 
 	c.Tag = Tag(b[0])
-	c.Length = uint8(readLength(b))
+	u, _ := readLength(b)
+	c.Length = u
 
-	var offset = 2
+	offset := 2
 
-	if(c.Length > 127){
+	if c.Length > 127 {
 		offset = 3
 	}
 	for {
@@ -369,7 +369,7 @@ func (c *Components) UnmarshalBinary(b []byte) error {
 		}
 		c.Component = append(c.Component, comp)
 
-		if(c.Length > 127) {
+		if c.Length > 127 {
 			if len(b[offset:]) == int(comp.Length)+3 {
 				break
 			}
@@ -399,11 +399,12 @@ func (c *Component) UnmarshalBinary(b []byte) error {
 		return io.ErrUnexpectedEOF
 	}
 	c.Type = Tag(b[0])
-	c.Length = uint8(readLength(b))
+	u, _ := readLength(b)
+	c.Length = u
 
 	var err error
-	var offset = 2
-	if(c.Length > 127){
+	offset := 2
+	if c.Length > 127 {
 		offset = 3
 	}
 	c.InvokeID, err = ParseIE(b[offset:])
@@ -572,7 +573,7 @@ func (c *Components) SetValsFrom(berParsed *IE) error {
 
 // MarshalLen returns the serial length of Components.
 func (c *Components) MarshalLen() int {
-	var l = 2
+	l := 2
 	for _, comp := range c.Component {
 		l += comp.MarshalLen()
 	}
@@ -581,7 +582,7 @@ func (c *Components) MarshalLen() int {
 
 // MarshalLen returns the serial length of Component.
 func (c *Component) MarshalLen() int {
-	var l = c.InvokeID.MarshalLen()
+	l := c.InvokeID.MarshalLen()
 	switch c.Type.Code() {
 	case Invoke:
 		if field := c.LinkedID; field != nil {

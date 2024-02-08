@@ -9,18 +9,18 @@ import (
 	"flag"
 	"log"
 
+	tcap "github.com/danievanzyl/go-ya-tcap"
 	"github.com/ishidawataru/sctp"
 	"github.com/wmnsk/go-m3ua"
 	m3params "github.com/wmnsk/go-m3ua/messages/params"
 	"github.com/wmnsk/go-sccp"
 	"github.com/wmnsk/go-sccp/params"
 	"github.com/wmnsk/go-sccp/utils"
-	"github.com/wmnsk/go-tcap"
 )
 
 func main() {
 	var (
-		addr    = flag.String("addr", "127.0.0.2:2905", "Remote IP and Port to connect to.")
+		addr    = flag.String("addr", "127.0.0.1:2905", "Remote IP and Port to connect to.")
 		otid    = flag.Int("otid", 0x11111111, "Originating Transaction ID in uint32.")
 		opcode  = flag.Int("opcode", 3, "Operation Code in int.")
 		payload = flag.String("payload", "040800010121436587f9", "Hex representation of the payload")

@@ -5,7 +5,6 @@
 package tcap
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 )
@@ -153,7 +152,7 @@ func (t *Transaction) MarshalTo(b []byte) error {
 	b[0] = uint8(t.Type)
 	if t.Length > 127 {
 		buf := make([]byte, 4)
-		t.Length = t.Length -1
+		t.Length = t.Length - 1
 		var count int
 		if (int64(t.Length) & int64(-16777216)) > 0 {
 			buf[0] = byte(t.Length >> 24 & 255)
@@ -248,34 +247,36 @@ func ParseTransaction(b []byte) (*Transaction, error) {
 	return t, nil
 }
 
-func readLength(b []byte) int{
-	var length int
-	r := bytes.NewReader(b[1:])
-	lengthByte, _ := r.ReadByte()
-	if((lengthByte & 128) == 0){
-		return int(lengthByte)
-	} else {
-		lengthByte = (lengthByte & 127)
-		if(lengthByte == 0){
-			return -1
-		} else {
-			for i := 0; i < int(lengthByte); i++ {
-				tmp, _ := r.ReadByte()
-				length = int(byte(length) << 8 | 255 & tmp)
-			}
-			return length
-		}
-	}
-}
+// func readLength(b []byte) int{
+// 	var length int
+// 	r := bytes.NewReader(b[1:])
+// 	lengthByte, _ := r.ReadByte()
+// 	if((lengthByte & 128) == 0){
+// 		return int(lengthByte)
+// 	} else {
+// 		lengthByte = (lengthByte & 127)
+// 		if(lengthByte == 0){
+// 			return -1
+// 		} else {
+// 			for i := 0; i < int(lengthByte); i++ {
+// 				tmp, _ := r.ReadByte()
+// 				length = int(byte(length) << 8 | 255 & tmp)
+// 			}
+// 			return length
+// 		}
+// 	}
+// }
 
 // UnmarshalBinary sets the values retrieved from byte sequence in an Transaction.
 func (t *Transaction) UnmarshalBinary(b []byte) error {
 	t.Type = Tag(b[0])
-	t.Length = uint8(readLength(b))
+
+	u, _ := readLength(b)
+	t.Length = u
 
 	var err error
-	var offset = 2
-	if(t.Length > 127){
+	offset := 2
+	if t.Length > 127 {
 		offset = 3
 	}
 
@@ -311,7 +312,6 @@ func (t *Transaction) UnmarshalBinary(b []byte) error {
 			return err
 		}
 		offset += t.DestTransactionID.MarshalLen()
-
 
 		//t.PAbortCause, err = ParseIE(b[offset : ])
 		//if err != nil {
