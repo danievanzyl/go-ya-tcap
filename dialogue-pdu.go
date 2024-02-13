@@ -66,6 +66,8 @@ const (
 	_
 	MmEventReportingContext
 	AnyTimeInfoHandlingContext
+
+	CapGsmSSFToGsmSCFContext = 50
 )
 
 // Result Value defnitions.
@@ -201,10 +203,10 @@ func NewAARQ(protover int, context, contextver uint8, userinfo ...*IE) *Dialogue
 func NewAARE(protover int, context, contextver, result uint8, diagsrc int, reason uint8, userinfo ...*IE) *DialoguePDU {
 	d := &DialoguePDU{
 		Type: NewApplicationWideConstructorTag(AARE),
-		ProtocolVersion: &IE{
-			Tag:   NewContextSpecificPrimitiveTag(0),
-			Value: []byte{0x07, uint8(protover << 7)}, // I don't actually know what the 0x07(padding) means...
-		},
+		//ProtocolVersion: &IE{
+		//   Tag:   NewContextSpecificPrimitiveTag(0),
+		//   Value: []byte{0x07, uint8(protover << 7)}, // I don't actually know what the 0x07(padding) means...
+		//},
 		ApplicationContextName: NewApplicationContextName(context, contextver),
 		Result:                 NewResult(result),
 		ResultSourceDiagnostic: NewResultSourceDiagnostic(diagsrc, reason),
@@ -244,26 +246,26 @@ func NewABRT(abortsrc uint8, userinfo ...*IE) *DialoguePDU {
 /*
 // NewAUDT returns a new AUDT(Unidirectional Dialogue).
 func NewAUDT(protover int, context, contextver uint8, userinfo ...*IE) *DialoguePDU {
-	d := NewDialoguePDU(
-		AUDT,
-		protover,
-		context,
-		contextver,
-		0,
-		0,
-		0,
-		0,
-	)
-	if len(userinfo) > 0 {
-		d.UserInformation = userinfo[0]
-	}
-	d.ProtocolVersion.Clear()
-	d.ApplicationContextName.Clear()
-	d.Result.Clear()
-	d.ResultSourceDiagnostic.Clear()
-	d.SetLength()
+    d := NewDialoguePDU(
+        AUDT,
+        protover,
+        context,
+        contextver,
+        0,
+        0,
+        0,
+        0,
+    )
+    if len(userinfo) > 0 {
+        d.UserInformation = userinfo[0]
+    }
+    d.ProtocolVersion.Clear()
+    d.ApplicationContextName.Clear()
+    d.Result.Clear()
+    d.ResultSourceDiagnostic.Clear()
+    d.SetLength()
 
-	return d
+    return d
 }
 */
 
@@ -298,7 +300,7 @@ func (d *DialoguePDU) MarshalTo(b []byte) error {
 }
 
 func (d *DialoguePDU) marshalAARQTo(b []byte) error {
-	var offset = 2
+	offset := 2
 	if field := d.ProtocolVersion; field != nil {
 		if err := field.MarshalTo(b[offset : offset+field.MarshalLen()]); err != nil {
 			return err
@@ -323,7 +325,7 @@ func (d *DialoguePDU) marshalAARQTo(b []byte) error {
 }
 
 func (d *DialoguePDU) marshalAARETo(b []byte) error {
-	var offset = 2
+	offset := 2
 	if field := d.ProtocolVersion; field != nil {
 		if err := field.MarshalTo(b[offset : offset+field.MarshalLen()]); err != nil {
 			return err
@@ -362,7 +364,7 @@ func (d *DialoguePDU) marshalAARETo(b []byte) error {
 }
 
 func (d *DialoguePDU) marshalABRTTo(b []byte) error {
-	var offset = 2
+	offset := 2
 	if field := d.AbortSource; field != nil {
 		if err := field.MarshalTo(b[offset : offset+field.MarshalLen()]); err != nil {
 			return err
@@ -413,7 +415,7 @@ func (d *DialoguePDU) UnmarshalBinary(b []byte) error {
 
 func (d *DialoguePDU) parseAARQFromBytes(b []byte) error {
 	var err error
-	var offset = 2
+	offset := 2
 	d.ProtocolVersion, err = ParseIE(b[offset:])
 	if err != nil {
 		return err
@@ -440,7 +442,7 @@ func (d *DialoguePDU) parseAARQFromBytes(b []byte) error {
 
 func (d *DialoguePDU) parseAAREFromBytes(b []byte) error {
 	var err error
-	var offset = 2
+	offset := 2
 	d.ProtocolVersion, err = ParseIE(b[offset:])
 	if err != nil {
 		return err
@@ -479,7 +481,7 @@ func (d *DialoguePDU) parseAAREFromBytes(b []byte) error {
 
 func (d *DialoguePDU) parseABRTFromBytes(b []byte) error {
 	var err error
-	var offset = 2
+	offset := 2
 	d.AbortSource, err = ParseIE(b[offset:])
 	if err != nil {
 		return err
