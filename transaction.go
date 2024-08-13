@@ -150,6 +150,7 @@ func NewContinueReturnResult(otid, dtid uint32, invID, opCode int, payload []byt
 
 // MarshalBinary returns the byte sequence generated from a Transaction instance.
 func (t *Transaction) MarshalBinary() ([]byte, error) {
+	fmt.Println("t.Marshalllen()", t.MarshalLen())
 	b := make([]byte, t.MarshalLen())
 	if err := t.MarshalTo(b); err != nil {
 		return nil, err
@@ -202,8 +203,10 @@ func (t *Transaction) MarshalTo(b []byte) error {
 	//
 	//
 	//
-	//
+
+	fmt.Printf("%+v\n", t)
 	offset = writeLength(b, t.Length)
+	fmt.Println("transaction:marshalto:len", b[0], b[1], b[2], offset, "marshal:len", t.MarshalLen())
 
 	switch t.Type.Code() {
 	case Unidirectional:
@@ -291,6 +294,7 @@ func (t *Transaction) UnmarshalBinary(b []byte) error {
 	u, _ := readLength(b)
 	t.Length = u
 
+	fmt.Println("transaction:readLength::", u)
 	var err error
 	offset := 2
 	if t.Length > 127 {
@@ -388,6 +392,7 @@ func (t *Transaction) MarshalLen() int {
 		}
 	}
 	l += len(t.Payload)
+	fmt.Println("$$$$$$$$$$4marshalllen", l, t.Length)
 	if t.Length > 127 {
 		return l + 3
 	} else {
@@ -407,6 +412,7 @@ func (t *Transaction) SetLength() {
 		field.SetLength()
 	}
 	t.Length = uint8(t.MarshalLen() - 2)
+	fmt.Println("SetLength---->", t.Length)
 }
 
 // MessageTypeString returns the name of Message Type in string.

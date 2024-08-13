@@ -123,18 +123,19 @@ func (i *IE) MarshalTo(b []byte) error {
 	b[0] = uint8(i.Tag)
 	b[1] = i.Length
 	copy(b[2:i.MarshalLen()], i.Value)
+	fmt.Printf("IE::::: -> %x\n", b)
 	return nil
 }
 
 // ParseMultiIEs parses multiple (unspecified number of) IEs to []*IE at a time.
 func ParseMultiIEs(b []byte) ([]*IE, error) {
 	var ies []*IE
-	for {
-		if len(b) == 0 {
-			break
-		}
+
+	// fmt.Printf("%x\n", b)
+	for len(b) != 0 {
 
 		i, err := ParseIE(b)
+		// fmt.Println(i, err)
 		if err != nil {
 			return nil, err
 		}
@@ -157,12 +158,14 @@ func ParseIE(b []byte) (*IE, error) {
 // UnmarshalBinary sets the values retrieved from byte sequence in an IE.
 func (i *IE) UnmarshalBinary(b []byte) error {
 	l := len(b)
+	// fmt.Println("IE:len", l)
 	if l < 3 {
 		return io.ErrUnexpectedEOF
 	}
 
 	i.Tag = Tag(b[0])
 	i.Length = b[1]
+	fmt.Printf("IE:tag %x [%x] len:%d\n", i.Tag, b[0], b[1])
 	if l < 2+int(i.Length) {
 		return io.ErrUnexpectedEOF
 	}

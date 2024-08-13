@@ -117,6 +117,7 @@ func NewInvoke(invID, lkID, opCode int, isLocal bool, param []byte) *Component {
 		}
 	}
 
+	fmt.Println("NewInvoke:param", param)
 	if param != nil {
 		if err := c.setParameterFromBytesWithTag(param); err != nil {
 			logf("failed to build Parameter: %v", err)
@@ -238,6 +239,7 @@ func (c *Components) MarshalTo(b []byte) error {
 	b[0] = uint8(c.Tag)
 	b[1] = c.Length
 
+	fmt.Printf("component: %x %d\n", b[0], b[1])
 	cursor := 2
 	for _, comp := range c.Component {
 		compLen := comp.MarshalLen()
@@ -271,6 +273,7 @@ func (c *Component) MarshalTo(b []byte) error {
 		offset += field.MarshalLen()
 	}
 
+	fmt.Println("component:type", c.Type.Code())
 	switch c.Type.Code() {
 	case Invoke:
 		if field := c.LinkedID; field != nil {
@@ -518,6 +521,7 @@ func (c *Component) setParameterFromBytesWithTag(b []byte) error {
 	tag := Tag(b[0])
 	b = b[2:]
 
+	fmt.Println("setParameterFromBytesWithTag", tag)
 	ies, err := ParseMultiIEs(b)
 	if err != nil {
 		logf("failed to parse given bytes, building it anyway: %v", err)
@@ -608,6 +612,7 @@ func (c *Components) MarshalLen() int {
 	for _, comp := range c.Component {
 		l += comp.MarshalLen()
 	}
+	fmt.Println("components:", "len", l)
 	return l
 }
 

@@ -30,6 +30,7 @@ func NewBeginInvoke(otid uint32, invID, opCode int, payload []byte) *TCAP {
 	}
 	t.SetLength()
 
+	fmt.Println("NewBeginInvoke:len", t.MarshalLen())
 	return t
 }
 
@@ -39,6 +40,7 @@ func NewBeginInvokeWithDialogue(otid uint32, dlgType, ctx, ctxver uint8, invID, 
 	t.Dialogue = NewDialogue(dlgType, 1, NewAARQ(1, ctx, ctxver), []byte{})
 	t.SetLength()
 
+	fmt.Println("NewBeginInvokeWithDialogue:len", t.MarshalLen())
 	return t
 }
 
@@ -117,6 +119,7 @@ func NewEndReturnResultWithDialogue(dtid uint32, dlgType, ctx, ctxver uint8, inv
 
 // MarshalBinary returns the byte sequence generated from a TCAP instance.
 func (t *TCAP) MarshalBinary() ([]byte, error) {
+	fmt.Println("tcap:marshalbinary:len", t.MarshalLen())
 	b := make([]byte, t.MarshalLen())
 	if err := t.MarshalTo(b); err != nil {
 		return nil, err
@@ -126,27 +129,38 @@ func (t *TCAP) MarshalBinary() ([]byte, error) {
 
 // MarshalTo puts the byte sequence in the byte array given as b.
 func (t *TCAP) MarshalTo(b []byte) error {
-	var offset = 0
+	offset := 0
+	fmt.Println("offset", offset)
 	if portion := t.Transaction; portion != nil {
+		fmt.Println("tcap:marshalto:Transaction:len", portion.MarshalLen())
 		if err := portion.MarshalTo(b[offset : offset+portion.MarshalLen()]); err != nil {
 			return err
 		}
 		offset += portion.MarshalLen()
 	}
 
+	fmt.Printf("bytes after Transaction:\n%x\n", b)
+	fmt.Println("offset", offset)
 	if portion := t.Dialogue; portion != nil {
+		fmt.Println("tcap:marshalto:Dialogue:len", portion.MarshalLen())
 		if err := portion.MarshalTo(b[offset : offset+portion.MarshalLen()]); err != nil {
 			return err
 		}
 		offset += portion.MarshalLen()
 	}
+	fmt.Printf("bytes after Dialogue:\n%x\n", b)
+	fmt.Println("offset", offset)
 
 	if portion := t.Components; portion != nil {
+		fmt.Println("tcap:marshalto:Components:len", portion.MarshalLen())
 		if err := portion.MarshalTo(b[offset : offset+portion.MarshalLen()]); err != nil {
 			return err
 		}
 	}
+	fmt.Printf("bytes after Components:\n%x\n", b)
+	fmt.Println("offset", offset)
 
+	fmt.Println("tcap:marshalto:total length: ", len(b))
 	return nil
 }
 
@@ -162,7 +176,7 @@ func Parse(b []byte) (*TCAP, error) {
 // UnmarshalBinary sets the values retrieved from byte sequence in a TCAP.
 func (t *TCAP) UnmarshalBinary(b []byte) error {
 	var err error
-	var offset = 0
+	offset := 0
 
 	t.Transaction, err = ParseTransaction(b[offset:])
 	if err != nil {
@@ -323,7 +337,7 @@ func (t *TCAP) AppContextNameWithVersion() string {
 func (t *TCAP) AppContextNameOid() string {
 	if r := t.Dialogue; r != nil {
 		if rp := r.DialoguePDU; rp != nil {
-			var oid = "0."
+			oid := "0."
 			for i, x := range rp.ApplicationContextName.Value[2:] {
 				oid += fmt.Sprint(x)
 				if i <= 6 {
